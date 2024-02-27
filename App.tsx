@@ -85,7 +85,7 @@ const App = () => {
     }
   }
 
-  const togglePreviewSize = () => {
+  const toggleExpandedPreview = () => {
     setExpandedPreview(!expandedPreview)
   }
 
@@ -130,7 +130,6 @@ const App = () => {
           onResponsiveOrientationChanged={(e) => handleIOSRotation(e.orientation)}
           responsiveOrientationWhenOrientationLocked
         >
-          {expandedPreview && <View style={$overlay} />}
           <View style={$captureWrapper}>
             <TouchableOpacity
               activeOpacity={0.6}
@@ -139,8 +138,9 @@ const App = () => {
               onPress={takePicture}
             />
           </View>
+          {expandedPreview && <Pressable onPress={toggleExpandedPreview} style={$overlay} />}
           {!!picture?.uri && (
-            <Pressable onPress={togglePreviewSize}>
+            <Pressable onPress={toggleExpandedPreview}>
               <Image source={picture.uri} style={$previewStyles} />
             </Pressable>
           )}
