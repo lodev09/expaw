@@ -13,8 +13,8 @@ import { StatusBar } from 'expo-status-bar'
 import { Image, ImageStyle } from 'expo-image'
 import {
   CameraCapturedPicture,
-  CameraOrientation,
   CameraView,
+  FlashMode,
   useCameraPermissions,
 } from 'expo-camera/next'
 import { isDevice } from 'expo-device'
@@ -46,18 +46,12 @@ const App = () => {
   const [picture, setPicture] = useState<CameraCapturedPicture>()
 
   const [expandedPreview, setExpandedPreview] = useState(false)
+  const [flashMode, setFlashMode] = useState<FlashMode>('on')
 
   const cameraRef = useRef<CameraView>(null)
 
   const previewWidth = dimensions.width - SPACE * 2
   const previewAspectRatio = picture ? picture.width / picture.height : 0
-
-  /**
-   * 🐛 Orientation type bug? Event returns numbers instead of stirngs!
-   */
-  const handleIOSRotation = (orientation: CameraOrientation) => {
-    console.warn('IOS ORIENTAION:', orientation)
-  }
 
   const takePicture = async () => {
     const [lng, lat] = mockPosition()
@@ -125,18 +119,26 @@ const App = () => {
         <CameraView
           ref={cameraRef}
           facing="back"
+          flash={flashMode} // 🐛 Flash doesn't work
           style={[$camera, x && y ? { height: height(dimensions.width, x, y) } : undefined]}
           onCameraReady={() => setIsCameraReady(true)}
-          onResponsiveOrientationChanged={(e) => handleIOSRotation(e.orientation)}
-          responsiveOrientationWhenOrientationLocked
         >
-          <View style={$captureWrapper}>
+          <View style={$controlsContainer}>
             <TouchableOpacity
+              style={$flashControls}
               activeOpacity={0.6}
-              style={$captureButton}
-              disabled={!isCameraReady || expandedPreview}
-              onPress={takePicture}
-            />
+              onPress={() => setFlashMode(flashMode === 'on' ? 'off' : 'on')}
+            >
+              <Text style={$text}>FLASH: {flashMode === 'on' ? 'ON' : 'OFF'}</Text>
+            </TouchableOpacity>
+            <View style={$captureWrapper}>
+              <TouchableOpacity
+                activeOpacity={0.6}
+                style={$captureButton}
+                disabled={!isCameraReady || expandedPreview}
+                onPress={takePicture}
+              />
+            </View>
           </View>
           {expandedPreview && <Pressable onPress={toggleExpandedPreview} style={$overlay} />}
           {!!picture?.uri && (
@@ -159,6 +161,21 @@ const $container: ViewStyle = {
   justifyContent: 'center',
 }
 
+const $controlsContainer: ViewStyle = {
+  position: 'absolute',
+  bottom: SPACE,
+  width: '100%',
+}
+
+const $flashControls: ViewStyle = {
+  alignSelf: 'center',
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  backgroundColor: 'rgba(13, 14, 17, 0.5)',
+  borderRadius: BORDER_RADIUS,
+  marginBottom: SPACE,
+}
+
 const $overlay: ViewStyle = {
   ...StyleSheet.absoluteFillObject,
   backgroundColor: 'rgba(13, 14, 17, 0.8)',
@@ -166,6 +183,7 @@ const $overlay: ViewStyle = {
 
 const $text: TextStyle = {
   color: '#ffffff',
+  fontWeight: 'bold',
 }
 
 const $camera: ViewStyle = {
@@ -174,8 +192,6 @@ const $camera: ViewStyle = {
 }
 
 const $captureWrapper: ViewStyle = {
-  position: 'absolute',
-  bottom: 0,
   alignSelf: 'center',
   backgroundColor: 'rgba(13, 14, 17, 0.25)',
   height: CAPTURE_WRAPPER_SIZE,
