@@ -20,6 +20,5 @@ export const mockPosition = (
   const lng =
     centerLng + (randomRadius / (111.32 * Math.cos(centerLat * (Math.PI / 180)))) * Math.sin(angle)
 
-  // Calculate the new coordinates
   return [lng, lat]
 }
