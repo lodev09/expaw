@@ -12,7 +12,12 @@ import {
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { Image, ImageStyle } from 'expo-image'
-import { CameraView, FlashMode, useCameraPermissions, useMicrophonePermissions } from 'expo-camera/next'
+import {
+  CameraView,
+  FlashMode,
+  useCameraPermissions,
+  useMicrophonePermissions,
+} from 'expo-camera/next'
 import { isDevice } from 'expo-device'
 import { ResizeMode, Video } from 'expo-av'
 import { getThumbnailAsync } from 'expo-video-thumbnails'
