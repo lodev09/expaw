@@ -8,16 +8,14 @@ import {
   useWindowDimensions,
   StyleSheet,
   TextStyle,
+  StyleProp,
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { Image, ImageStyle } from 'expo-image'
-import {
-  CameraCapturedPicture,
-  CameraView,
-  FlashMode,
-  useCameraPermissions,
-} from 'expo-camera/next'
+import { CameraView, FlashMode, useCameraPermissions } from 'expo-camera/next'
 import { isDevice } from 'expo-device'
+import { ResizeMode, Video } from 'expo-av'
+import { getThumbnailAsync } from 'expo-video-thumbnails'
 
 import { mockPosition } from './utils'
 
@@ -28,8 +26,18 @@ const CAPTURE_BUTTON_SIZE = 64
 const CAPTURE_WRAPPER_SIZE = CAPTURE_BUTTON_SIZE + SPACE
 
 const SMALL_PREVIEW_SIZE = SPACE * 4
+const OVERLAY_COLOR = 'rgba(0, 0, 0, 0.75)'
+const OVERLAY_LIGHT_COLOR = 'rgba(0, 0, 0, 0.25)'
 
 const height = (w: number, x: number, y: number) => Math.round(w * (y / x))
+
+interface Preview {
+  uri: string
+  width: number
+  height: number
+  thumbnailUri?: string
+  isVideo?: boolean
+}
 
 // Supported "portrait" Aspect Ratios: 9:16, 3:4
 const ASPECT_RATIOS: [number, number][] = [
@@ -43,7 +51,7 @@ const App = () => {
 
   const [isCameraReady, setIsCameraReady] = useState(false)
   const [[x, y], setAspectRatio] = useState<[number, number]>([3, 4])
-  const [picture, setPicture] = useState<CameraCapturedPicture>()
+  const [preview, setPreview] = useState<Preview>()
 
   const [isRecording, setIsRecording] = useState(false)
 
@@ -53,14 +61,26 @@ const App = () => {
   const cameraRef = useRef<CameraView>(null)
 
   const previewWidth = dimensions.width - SPACE * 2
-  const previewAspectRatio = picture ? picture.width / picture.height : 0
+  const previewAspectRatio = preview ? preview.width / preview.height : 0
 
   const startRecording = async () => {
     try {
       setIsRecording(true)
-      // 🐛 Doesn't do anything
-      const result = await cameraRef.current?.recordAsync()
-      console.log(result?.uri)
+      const video = await cameraRef.current?.recordAsync()
+      setIsRecording(false)
+
+      if (video?.uri) {
+        const thumbnail = await getThumbnailAsync(video.uri, {
+          quality: 0.5,
+        })
+
+        setPreview({
+          ...thumbnail,
+          uri: video.uri,
+          thumbnailUri: thumbnail.uri,
+          isVideo: true,
+        })
+      }
     } catch (e) {
       console.error(e)
     }
@@ -68,9 +88,7 @@ const App = () => {
 
   const handleCapturePress = async () => {
     if (isRecording) {
-      // 🐛 Doesn't do anything
       cameraRef.current?.stopRecording()
-      setIsRecording(false)
       return
     }
 
@@ -93,21 +111,27 @@ const App = () => {
         },
       })
 
-      setPicture(picture)
+      setPreview(picture)
     } catch (e) {
       console.error(e)
     }
   }
 
-  const toggleExpandedPreview = () => {
-    setExpandedPreview(!expandedPreview)
+  const expandPreview = () => {
+    setExpandedPreview(true)
   }
 
-  const $previewStyles: ImageStyle = {
-    ...$preview,
-    width: expandedPreview ? previewWidth : SMALL_PREVIEW_SIZE,
-    height: expandedPreview ? previewWidth / previewAspectRatio : SMALL_PREVIEW_SIZE,
+  const dismissPreview = () => {
+    setExpandedPreview(false)
   }
+
+  const $previewStyles: StyleProp<ViewStyle> = [
+    $previewContainer,
+    {
+      width: expandedPreview ? previewWidth : SMALL_PREVIEW_SIZE,
+      height: expandedPreview ? previewWidth / previewAspectRatio : SMALL_PREVIEW_SIZE,
+    },
+  ]
 
   const $captureButtonStyles: ViewStyle = {
     ...$captureButton,
@@ -148,12 +172,13 @@ const App = () => {
           ref={cameraRef}
           facing="back"
           flash={flashMode}
+          mode="video"
           style={[$camera, x && y ? { height: height(dimensions.width, x, y) } : undefined]}
           onCameraReady={() => setIsCameraReady(true)}
         >
           <View style={$controlsContainer}>
             <TouchableOpacity
-              style={$flashControls}
+              style={[$flashControls, { opacity: isRecording ? 0 : 1 }]}
               activeOpacity={0.6}
               onPress={() => setFlashMode(flashMode === 'on' ? 'off' : 'on')}
             >
@@ -169,11 +194,42 @@ const App = () => {
               />
             </View>
           </View>
-          {expandedPreview && <Pressable onPress={toggleExpandedPreview} style={$overlay} />}
-          {!!picture?.uri && (
-            <Pressable onPress={toggleExpandedPreview}>
-              <Image source={picture.uri} style={$previewStyles} />
-            </Pressable>
+          {expandedPreview && <View style={$previewOverlay} />}
+          {!!preview?.uri && (
+            <View style={$previewStyles}>
+              {expandedPreview ? (
+                <>
+                  {preview.isVideo ? (
+                    <Video
+                      source={{ uri: preview.uri }}
+                      shouldPlay
+                      style={$previewSource}
+                      useNativeControls
+                      resizeMode={ResizeMode.CONTAIN}
+                    />
+                  ) : (
+                    <Image source={{ uri: preview.uri }} style={$previewSource} />
+                  )}
+                  <TouchableOpacity
+                    style={$dimissPreview}
+                    activeOpacity={0.6}
+                    onPress={dismissPreview}
+                  >
+                    <Text style={$text}>Dismiss</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Image
+                    source={{ uri: preview.thumbnailUri ?? preview.uri }}
+                    style={$previewSource}
+                  />
+                  <Pressable style={$previewIconOverlay} onPress={expandPreview}>
+                    {preview.isVideo && <Text style={$previewIcon}>🎬</Text>}
+                  </Pressable>
+                </>
+              )}
+            </View>
           )}
         </CameraView>
       ) : (
@@ -200,14 +256,14 @@ const $flashControls: ViewStyle = {
   alignSelf: 'center',
   paddingHorizontal: 8,
   paddingVertical: 4,
-  backgroundColor: 'rgba(13, 14, 17, 0.5)',
+  backgroundColor: OVERLAY_COLOR,
   borderRadius: BORDER_RADIUS,
-  marginBottom: SPACE,
+  marginBottom: SPACE * 2,
 }
 
-const $overlay: ViewStyle = {
+const $previewOverlay: ViewStyle = {
   ...StyleSheet.absoluteFillObject,
-  backgroundColor: 'rgba(13, 14, 17, 0.8)',
+  backgroundColor: OVERLAY_COLOR,
 }
 
 const $text: TextStyle = {
@@ -222,7 +278,6 @@ const $camera: ViewStyle = {
 
 const $captureWrapper: ViewStyle = {
   alignSelf: 'center',
-  backgroundColor: 'rgba(13, 14, 17, 0.25)',
   height: CAPTURE_WRAPPER_SIZE,
   width: CAPTURE_WRAPPER_SIZE,
   borderRadius: CAPTURE_WRAPPER_SIZE / 2,
@@ -240,14 +295,39 @@ const $captureButton: ViewStyle = {
   borderRadius: CAPTURE_BUTTON_SIZE / 2,
 }
 
-const $preview: ImageStyle = {
+const $previewContainer: ViewStyle = {
   position: 'absolute',
   top: SPACE,
   right: SPACE,
-  backgroundColor: '#ffffff',
-  borderRadius: BORDER_RADIUS,
   borderWidth: 2,
   borderColor: '#ffffff',
+}
+
+const $previewSource: ImageStyle = {
+  width: '100%',
+  height: '100%',
+}
+
+const $previewIconOverlay: ViewStyle = {
+  ...StyleSheet.absoluteFillObject,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: OVERLAY_LIGHT_COLOR,
+}
+
+const $previewIcon: TextStyle = {
+  fontSize: 28,
+}
+
+const $dimissPreview: ViewStyle = {
+  position: 'absolute',
+  right: SPACE,
+  top: SPACE,
+  backgroundColor: OVERLAY_COLOR,
+  borderRadius: BORDER_RADIUS,
+  paddingHorizontal: SPACE,
+  paddingVertical: SPACE / 2,
+  zIndex: 1,
 }
 
 export default App
