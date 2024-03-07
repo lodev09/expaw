@@ -12,7 +12,7 @@ import {
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { Image, ImageStyle } from 'expo-image'
-import { CameraView, FlashMode, useCameraPermissions } from 'expo-camera/next'
+import { CameraView, FlashMode, useCameraPermissions, useMicrophonePermissions } from 'expo-camera/next'
 import { isDevice } from 'expo-device'
 import { ResizeMode, Video } from 'expo-av'
 import { getThumbnailAsync } from 'expo-video-thumbnails'
@@ -48,6 +48,7 @@ const ASPECT_RATIOS: [number, number][] = [
 const App = () => {
   const dimensions = useWindowDimensions()
   const [cameraPermission, requestCameraPermission] = useCameraPermissions()
+  const [_, requestMicrophonePermission] = useMicrophonePermissions()
 
   const [isCameraReady, setIsCameraReady] = useState(false)
   const [[x, y], setAspectRatio] = useState<[number, number]>([3, 4])
@@ -144,6 +145,7 @@ const App = () => {
   useEffect(() => {
     ;(async () => {
       await requestCameraPermission()
+      await requestMicrophonePermission()
     })()
   }, [])
 
@@ -173,6 +175,7 @@ const App = () => {
           facing="back"
           flash={flashMode}
           mode="video"
+          mute={false} // 🐛 Default `mute=false` doesn't work. Need to set it explicitly to work
           style={[$camera, x && y ? { height: height(dimensions.width, x, y) } : undefined]}
           onCameraReady={() => setIsCameraReady(true)}
         >
