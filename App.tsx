@@ -24,10 +24,10 @@ import { mockPosition } from './utils'
 const BORDER_RADIUS = 4
 const SPACE = 16
 
-const CAPTURE_BUTTON_SIZE = 72
+const CAPTURE_BUTTON_SIZE = 64
 const CAPTURE_WRAPPER_SIZE = CAPTURE_BUTTON_SIZE + SPACE
 
-const SMALL_PREVIEW_SIZE = SPACE * 7
+const SMALL_PREVIEW_SIZE = SPACE * 4
 
 const height = (w: number, x: number, y: number) => Math.round(w * (y / x))
 
@@ -45,6 +45,8 @@ const App = () => {
   const [[x, y], setAspectRatio] = useState<[number, number]>([3, 4])
   const [picture, setPicture] = useState<CameraCapturedPicture>()
 
+  const [isRecording, setIsRecording] = useState(false)
+
   const [expandedPreview, setExpandedPreview] = useState(false)
   const [flashMode, setFlashMode] = useState<FlashMode>('on')
 
@@ -53,7 +55,25 @@ const App = () => {
   const previewWidth = dimensions.width - SPACE * 2
   const previewAspectRatio = picture ? picture.width / picture.height : 0
 
-  const takePicture = async () => {
+  const startRecording = async () => {
+    try {
+      setIsRecording(true)
+      // 🐛 Doesn't do anything
+      const result = await cameraRef.current?.recordAsync()
+      console.log(result?.uri)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleCapturePress = async () => {
+    if (isRecording) {
+      // 🐛 Doesn't do anything
+      cameraRef.current?.stopRecording()
+      setIsRecording(false)
+      return
+    }
+
     const [lng, lat] = mockPosition()
 
     const locationExif = {
@@ -66,7 +86,7 @@ const App = () => {
 
     try {
       const picture = await cameraRef.current?.takePictureAsync({
-        exif: true, // 🐛 Enabling exif produces wrong orientation when landscaped
+        exif: true,
         additionalExif: {
           ...locationExif,
           UserComment: `Bug with expo-camera/next`,
@@ -87,6 +107,14 @@ const App = () => {
     ...$preview,
     width: expandedPreview ? previewWidth : SMALL_PREVIEW_SIZE,
     height: expandedPreview ? previewWidth / previewAspectRatio : SMALL_PREVIEW_SIZE,
+  }
+
+  const $captureButtonStyles: ViewStyle = {
+    ...$captureButton,
+    backgroundColor: isRecording ? 'red' : 'white',
+    width: isRecording ? CAPTURE_BUTTON_SIZE / 2 : CAPTURE_BUTTON_SIZE,
+    height: isRecording ? CAPTURE_BUTTON_SIZE / 2 : CAPTURE_BUTTON_SIZE,
+    borderRadius: isRecording ? BORDER_RADIUS : CAPTURE_BUTTON_SIZE / 2,
   }
 
   useEffect(() => {
@@ -119,7 +147,7 @@ const App = () => {
         <CameraView
           ref={cameraRef}
           facing="back"
-          flash={flashMode} // 🐛 Flash doesn't work
+          flash={flashMode}
           style={[$camera, x && y ? { height: height(dimensions.width, x, y) } : undefined]}
           onCameraReady={() => setIsCameraReady(true)}
         >
@@ -134,9 +162,10 @@ const App = () => {
             <View style={$captureWrapper}>
               <TouchableOpacity
                 activeOpacity={0.6}
-                style={$captureButton}
+                style={$captureButtonStyles}
                 disabled={!isCameraReady || expandedPreview}
-                onPress={takePicture}
+                onPress={handleCapturePress}
+                onLongPress={startRecording}
               />
             </View>
           </View>
@@ -200,6 +229,8 @@ const $captureWrapper: ViewStyle = {
   marginBottom: SPACE * 2,
   alignItems: 'center',
   justifyContent: 'center',
+  borderWidth: 2,
+  borderColor: 'white',
 }
 
 const $captureButton: ViewStyle = {
