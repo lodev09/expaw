@@ -22,7 +22,7 @@ import { isDevice } from 'expo-device'
 import { ResizeMode, Video } from 'expo-av'
 import { getThumbnailAsync } from 'expo-video-thumbnails'
 
-import { mockPosition } from './utils'
+import { delay, mockPosition } from './utils'
 
 const BORDER_RADIUS = 4
 const SPACE = 16
@@ -72,8 +72,14 @@ const App = () => {
   const startRecording = async () => {
     try {
       setIsRecording(true)
+
+      // 🐛 Bug?
+      // Is there a better way to switch camera modes?
+      // Without delaying, record doesn't initialize..
+      // most likely because camera isn't available yet after the switch
+      await delay(300)
+
       const video = await cameraRef.current?.recordAsync()
-      setIsRecording(false)
 
       if (video?.uri) {
         const thumbnail = await getThumbnailAsync(video.uri, {
@@ -94,6 +100,7 @@ const App = () => {
 
   const handleCapturePress = async () => {
     if (isRecording) {
+      setIsRecording(false)
       cameraRef.current?.stopRecording()
       return
     }
@@ -179,7 +186,9 @@ const App = () => {
           ref={cameraRef}
           facing="back"
           flash={flashMode}
-          mode="video"
+          // Passing only `video` here will cause expo-haptics to not work
+          // We need haptics! :(
+          mode={isRecording ? 'video' : 'picture'}
           mute={false} // 🐛 Default `mute=false` doesn't work. Need to set it explicitly to work
           style={[$camera, x && y ? { height: height(dimensions.width, x, y) } : undefined]}
           onCameraReady={() => setIsCameraReady(true)}
