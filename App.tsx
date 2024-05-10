@@ -62,7 +62,7 @@ const App = () => {
   const [isRecording, setIsRecording] = useState(false)
 
   const [expandedPreview, setExpandedPreview] = useState(false)
-  const [flashMode, setFlashMode] = useState<FlashMode>('on')
+  const [flashMode, setFlashMode] = useState<FlashMode>('off')
 
   const cameraRef = useRef<CameraView>(null)
 
