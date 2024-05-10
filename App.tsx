@@ -72,26 +72,29 @@ const App = () => {
   const startRecording = async () => {
     haptic()
 
-    try {
-      setIsRecording(true)
+    setIsRecording(true)
 
-      const video = await cameraRef.current?.recordAsync()
+    // Add delay before actually recording
+    setTimeout(async () => {
+      try {
+        const video = await cameraRef.current?.recordAsync()
 
-      if (video?.uri) {
-        const thumbnail = await getThumbnailAsync(video.uri, {
-          quality: 0.5,
-        })
+        if (video?.uri) {
+          const thumbnail = await getThumbnailAsync(video.uri, {
+            quality: 0.5,
+          })
 
-        setPreview({
-          ...thumbnail,
-          uri: video.uri,
-          thumbnailUri: thumbnail.uri,
-          isVideo: true,
-        })
+          setPreview({
+            ...thumbnail,
+            uri: video.uri,
+            thumbnailUri: thumbnail.uri,
+            isVideo: true,
+          })
+        }
+      } catch (e) {
+        console.error(e)
       }
-    } catch (e) {
-      console.error(e)
-    }
+    }, 600)
   }
 
   const handleCapturePress = async () => {
@@ -183,6 +186,17 @@ const App = () => {
         <CameraView
           ref={cameraRef}
           facing="back"
+
+          // 🐛
+          // 
+          // Unmuted video will only work if we explicitly set this if is recording,
+          // which is weird.
+          // 
+          // Two issues when recording:
+          //  - Video includes a dead frame :(
+          //  - If removed, video is muted regardless of audio permission.
+          mute={!isRecording}
+
           flash={flashMode}
           mode={isRecording ? 'video' : 'picture'}
           style={[$camera, x && y ? { height: height(dimensions.width, x, y) } : undefined]}

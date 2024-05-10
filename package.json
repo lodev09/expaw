@@ -13,27 +13,25 @@
     "tidy": "yarn doctor && prettier --write \"**/*.{js,json,ts,tsx}\""
   },
   "dependencies": {
-    "expo": "~50.0.17",
-    "expo-av": "~13.10.6",
+    "expo": "^51.0.2",
+    "expo-av": "~14.0.4",
     "expo-camera": "15.0.2",
-    "expo-device": "~5.9.4",
-    "expo-haptics": "~12.8.1",
-    "expo-image": "~1.10.6",
-    "expo-status-bar": "~1.11.1",
-    "expo-video-thumbnails": "~7.9.0",
+    "expo-device": "~6.0.2",
+    "expo-haptics": "~13.0.1",
+    "expo-image": "~1.12.9",
+    "expo-status-bar": "~1.12.1",
+    "expo-video-thumbnails": "~8.0.0",
     "react": "18.2.0",
-    "react-native": "0.73.6"
+    "react-native": "0.74.1"
   },
   "expo": {
     "install": {
-      "exclude": [
-        "expo-camera"
-      ]
+      "exclude": []
     }
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0",
-    "@types/react": "~18.2.45",
+    "@babel/core": "^7.24.0",
+    "@types/react": "~18.2.79",
     "prettier": "^3.2.5",
     "typescript": "^5.1.3"
   },
