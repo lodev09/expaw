@@ -195,7 +195,7 @@ const App = () => {
           // Two issues when recording:
           //  - Video includes a dead frame :(
           //  - If removed, video is muted regardless of audio permission.
-          mute={!isRecording}
+          // mute={!isRecording}
 
           flash={flashMode}
           mode={isRecording ? 'video' : 'picture'}
