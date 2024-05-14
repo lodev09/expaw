@@ -3,7 +3,7 @@ import { Image, ImageProps, ImageStyle } from 'expo-image'
 
 export const PreviewImage = (props: ImageProps) => {
   const { style: $styleOverride, ...rest } = props
-  return <Image testID="preview-image" style={[$previewSource, $styleOverride]} {...rest} />
+  return <Image accessible accessibilityRole='image' style={[$previewSource, $styleOverride]} {...rest} />
 }
 
 const $previewSource: ImageStyle = {
