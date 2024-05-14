@@ -11,18 +11,13 @@ import {
   StyleProp,
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
-import { Image, ImageStyle } from 'expo-image'
-import {
-  CameraView,
-  FlashMode,
-  useCameraPermissions,
-  useMicrophonePermissions,
-} from 'expo-camera'
+import { CameraView, FlashMode, useCameraPermissions, useMicrophonePermissions } from 'expo-camera'
 import { isDevice } from 'expo-device'
 import { ResizeMode, Video } from 'expo-av'
 import { getThumbnailAsync } from 'expo-video-thumbnails'
 
 import { haptic, mockPosition } from './utils'
+import { PreviewImage } from './components'
 
 const BORDER_RADIUS = 4
 const SPACE = 16
@@ -186,17 +181,6 @@ const App = () => {
         <CameraView
           ref={cameraRef}
           facing="back"
-
-          // 🐛
-          // 
-          // Unmuted video will only work if we explicitly set this if is recording,
-          // which is weird.
-          // 
-          // Two issues when recording:
-          //  - Video includes a dead frame :(
-          //  - If removed, video is muted regardless of audio permission.
-          // mute={!isRecording}
-
           flash={flashMode}
           mode={isRecording ? 'video' : 'picture'}
           style={[$camera, x && y ? { height: height(dimensions.width, x, y) } : undefined]}
@@ -229,12 +213,12 @@ const App = () => {
                     <Video
                       source={{ uri: preview.uri }}
                       shouldPlay
-                      style={$previewSource}
+                      style={$videoPreview}
                       useNativeControls
                       resizeMode={ResizeMode.CONTAIN}
                     />
                   ) : (
-                    <Image source={{ uri: preview.uri }} style={$previewSource} />
+                    <PreviewImage source={{ uri: preview.uri }} />
                   )}
                   <TouchableOpacity
                     style={$dimissPreview}
@@ -246,10 +230,7 @@ const App = () => {
                 </>
               ) : (
                 <>
-                  <Image
-                    source={{ uri: preview.thumbnailUri ?? preview.uri }}
-                    style={$previewSource}
-                  />
+                  <PreviewImage source={{ uri: preview.thumbnailUri ?? preview.uri }} />
                   <Pressable style={$previewIconOverlay} onPress={expandPreview}>
                     {preview.isVideo && <Text style={$previewIcon}>🎬</Text>}
                   </Pressable>
@@ -329,7 +310,7 @@ const $previewContainer: ViewStyle = {
   borderColor: '#ffffff',
 }
 
-const $previewSource: ImageStyle = {
+const $videoPreview: ViewStyle = {
   width: '100%',
   height: '100%',
 }

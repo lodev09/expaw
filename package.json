@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit -p . --pretty",
     "tidy": "yarn doctor && prettier --write \"**/*.{js,json,ts,tsx}\"",
     "patch": "patch-package",
+    "test": "jest",
     "postinstall": "patch-package"
   },
   "dependencies": {
@@ -31,11 +32,21 @@
       "exclude": []
     }
   },
+  "jest": {
+    "preset": "jest-expo",
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)"
+    ]
+  },
   "devDependencies": {
     "@babel/core": "^7.24.0",
+    "@testing-library/react-native": "^12.5.0",
     "@types/react": "~18.2.79",
+    "jest": "^29.7.0",
+    "jest-expo": "^51.0.1",
     "patch-package": "^8.0.0",
     "prettier": "^3.2.5",
+    "react-test-renderer": "^18.3.1",
     "typescript": "~5.3.3"
   },
   "private": true,
